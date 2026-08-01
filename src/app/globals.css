@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --sidebar: #f7f7f8;
+  --foreground: #1a1a1f;
+  --muted: #6b6b76;
+  --border: #ececef;
+  --accent: #4f46e5;
+  --accent-soft: #eef0fe;
+}
+
+html,
+body {
+  max-width: 100vw;
+  background: var(--background);
+  color: var(--foreground);
+  /* Inter for Latin, Noto Sans Thai for Thai glyphs (per-glyph fallback) */
+  font-family: var(--font-inter), var(--font-noto-thai), "Inter",
+    "Noto Sans Thai", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
