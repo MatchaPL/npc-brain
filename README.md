@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/banner.svg" alt="NPC Brain" width="100%">
-</p>
-
 <h1 align="center">NPC Brain</h1>
 
 <p align="center">
