@@ -119,9 +119,9 @@ async function main() {
 
     const { error } = await supabase.from("document_chunks").insert(rows);
     if (error) {
-      console.error(`\n✗ ${source}: ${error.message}`);
+      console.error(`\n[fail] ${source}: ${error.message}`);
     } else {
-      console.log(`✓ ${source} — ${chunks.length} chunks (${meta.category || "general"})`);
+      console.log(`[ok] ${source} — ${chunks.length} chunks (${meta.category || "general"})`);
       totalChunks += chunks.length;
     }
   }

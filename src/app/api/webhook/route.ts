@@ -17,16 +17,16 @@ function validateSignature(body: string, signature: string): boolean {
   return hash === signature;
 }
 
-const HELP_TEXT = `📋 NPC Brain — สมองของบริษัท
+const HELP_TEXT = `NPC Brain — สมองของบริษัท
 
 พิมพ์คำถามเกี่ยวกับบริษัทได้เลย เช่น:
-• "ลาป่วยได้กี่วัน ต้องมีใบรับรองแพทย์ไหม"
-• "เบิกค่าเดินทางต่างจังหวัดได้เท่าไหร่"
-• "ขอ template ใบเสนอราคาอยู่ที่ไหน"
-• "wifi office password อะไร"
-• "ขั้นตอนขอซื้อของทำยังไง"
+- "ลาป่วยได้กี่วัน ต้องมีใบรับรองแพทย์ไหม"
+- "เบิกค่าเดินทางต่างจังหวัดได้เท่าไหร่"
+- "ขอ template ใบเสนอราคาอยู่ที่ไหน"
+- "wifi office password อะไร"
+- "ขั้นตอนขอซื้อของทำยังไง"
 
-ผมจะตอบจากเอกสารภายในบริษัทจริง พร้อมบอกแหล่งอ้างอิงครับ 📎`;
+ผมจะตอบจากเอกสารภายในบริษัทจริง พร้อมบอกแหล่งอ้างอิงครับ`;
 
 async function handleFollow(event: webhook.FollowEvent) {
   if (!event.replyToken) return;
@@ -35,7 +35,7 @@ async function handleFollow(event: webhook.FollowEvent) {
     messages: [
       {
         type: "text",
-        text: `สวัสดีครับ! ผมคือ NPC Brain 🧠\nผู้ช่วยที่รู้ทุกเรื่องของบริษัท ถามอะไรก็ได้เกี่ยวกับงาน นโยบาย หรือหาไฟล์ไม่เจอ\n\n${HELP_TEXT}`,
+        text: `สวัสดีครับ ผมคือ NPC Brain\nผู้ช่วยที่รู้ทุกเรื่องของบริษัท ถามอะไรก็ได้เกี่ยวกับงาน นโยบาย หรือหาไฟล์ไม่เจอ\n\n${HELP_TEXT}`,
       },
     ],
   });
@@ -75,7 +75,7 @@ async function handleMessage(event: webhook.MessageEvent) {
     sources = result.sources.map((s) => s.source);
   } catch (e) {
     console.error("RAG error:", e);
-    reply = "ขออภัยครับ ระบบมีปัญหาชั่วคราว ลองใหม่อีกครั้งนะครับ 🙏";
+    reply = "ขออภัยครับ ระบบมีปัญหาชั่วคราว ลองใหม่อีกครั้งนะครับ";
   }
 
   const latencyMs = Date.now() - started;

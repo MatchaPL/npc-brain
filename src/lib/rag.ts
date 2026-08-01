@@ -228,13 +228,13 @@ export async function answerWorld(question: string): Promise<RagResult> {
 /** Format a RAG result into a LINE-friendly text reply with citations. */
 export function formatReply(result: RagResult, question: string): string {
   if (!result.answered) {
-    return `🔍 ไม่พบข้อมูลนี้ในระบบครับ\n\nคำถาม: "${question}"\n\nลองถามใหม่ด้วยคำที่เฉพาะเจาะจงขึ้น หรือติดต่อฝ่ายที่เกี่ยวข้องโดยตรงนะครับ`;
+    return `ไม่พบข้อมูลนี้ในระบบครับ\n\nคำถาม: "${question}"\n\nลองถามใหม่ด้วยคำที่เฉพาะเจาะจงขึ้น หรือติดต่อฝ่ายที่เกี่ยวข้องโดยตรงนะครับ`;
   }
 
   let text = result.answer;
 
   if (result.sources.length > 0) {
-    text += `\n\n📎 อ้างอิงจาก:`;
+    text += `\n\nอ้างอิงจาก:`;
     for (const s of result.sources) {
       text += `\n• ${s.title || s.source}`;
       if (s.url) text += `\n  ${s.url}`;

@@ -115,7 +115,7 @@ export default function Home() {
             role: "assistant",
             mode: "company",
             answered: true,
-            text: `📎 จำไฟล์ “${data.name}” ไว้แล้ว (${Number(
+            text: `จำไฟล์ “${data.name}” ไว้แล้ว (${Number(
               data.chars,
             ).toLocaleString()} ตัวอักษร)\nถามเกี่ยวกับไฟล์นี้ได้เลยในโหมด Company knowledge`,
           },
@@ -358,7 +358,7 @@ export default function Home() {
                       key={i}
                       className="flex items-center gap-1 rounded-full bg-[#eef0fe] px-2.5 py-1 text-xs text-[#4f46e5]"
                     >
-                      📎 {n}
+                      {n}
                       <Icon path={I.check} className="h-3 w-3" />
                     </span>
                   ))}
@@ -506,6 +506,17 @@ function MenuOption({
   );
 }
 
+// Minimal rich text: render **bold** segments; newlines handled by whitespace-pre-wrap.
+function renderRich(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i}>{part.slice(2, -2)}</strong>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+}
+
 function MessageBubble({ m }: { m: Message }) {
   if (m.role === "user") {
     return (
@@ -532,20 +543,22 @@ function MessageBubble({ m }: { m: Message }) {
           </div>
         ) : m.error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            ⚠️ {m.error}
+            {m.error}
           </div>
         ) : m.mode === "company" && m.answered === false ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            🔍 ไม่พบข้อมูลนี้ในระบบ — บอตจะไม่เดาคำตอบ ลองถามด้วยคำที่เฉพาะเจาะจงขึ้น
+            ไม่พบข้อมูลนี้ในระบบ — บอตจะไม่เดาคำตอบ ลองถามด้วยคำที่เฉพาะเจาะจงขึ้น
             หรือสลับไปโหมด World knowledge
           </div>
         ) : (
           <>
-            <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{m.text}</p>
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+              {renderRich(m.text)}
+            </p>
             {m.sources && m.sources.length > 0 && (
               <div className="mt-4 rounded-xl border border-[#ececef] bg-[#fafafb] p-3">
                 <div className="mb-1.5 text-xs font-medium text-[#6b6b76]">
-                  📎 อ้างอิงจาก
+                  อ้างอิงจาก
                 </div>
                 <ul className="space-y-1">
                   {m.sources.map((s) => (

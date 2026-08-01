@@ -2,11 +2,11 @@
   <img src="docs/banner.svg" alt="NPC Brain" width="100%">
 </p>
 
-<h1 align="center">NPC Brain 🧠</h1>
+<h1 align="center">NPC Brain</h1>
 
 <p align="center">
-  An internal <b>knowledge assistant</b> that answers employees' questions — on <b>LINE</b> or the web —
-  <br/>grounded in the company's own documents, always <b>with source citations</b>.
+  An internal knowledge assistant. Employees ask a question — on LINE or in the web app —
+  <br/>and it answers from the company's own documents, with a link back to the source.
 </p>
 
 <p align="center">
@@ -19,142 +19,121 @@
 
 ---
 
-Unlike a generic chatbot, NPC Brain answers **only from your company's data** and says *"not found"* instead of
-making things up. Employees can ask about HR policy, expense rules, where a file lives, an SOP, or a customer
-project — and get a concise answer with a link back to the source document.
+Most company chatbots either don't know your internal stuff or make it up. NPC Brain does neither: it only
+answers from documents you give it, always shows where the answer came from, and replies "not found" when the
+answer isn't in the docs.
 
-> 🧪 This repo ships with a **fictional company** (“NPC Co., Ltd.”) and sample HR / finance / IT / SOP / customer
-> docs so the whole thing runs end-to-end out of the box.
+I built it to work through a practical RAG setup end to end — retrieval, grounding, citations, a LINE
+integration, and a chat UI that doesn't feel like a demo. The repo ships with a made-up company
+("NPC Co., Ltd.") and a handful of sample HR, finance, IT, and SOP documents, so it runs out of the box.
 
-## ✨ Why this project is interesting
+## Screenshots
 
-- **RAG done right** — retrieval + grounding + **citations**, with an explicit *"I don't know"* path (no hallucination).
-- **Multi-provider LLM** — one abstraction over **OpenRouter, Claude, and Gemini**; switch models with an env var.
-- **Graceful degradation** — if the vector DB isn't configured, Company mode **falls back to reading local docs
-  directly**, so the demo runs with a *single* API key.
-- **Upload & remember** — drop a text file in chat and it's instantly part of the knowledge base.
-- **Full-stack + integrations** — Next.js App Router, Supabase `pgvector`, and a LINE Messaging API webhook.
-- **Product-grade UI** — a clean, Glean-inspired chat with a Company/World knowledge toggle.
-
-## 📸 Screenshots
-
-<details>
-  <summary>▶ Web playground (click to expand)</summary>
-  <br/>
-  <img src="docs/screenshots/1-home.png" alt="Home" width="49%">
-  <img src="docs/screenshots/2-company-answer.png" alt="Company answer with citations" width="49%">
-  <p><i>Left: prompt library &amp; chat. Right: an answer grounded in company docs, with clickable citations.</i></p>
-</details>
-
-> Add your own captures to [`docs/screenshots/`](docs/screenshots/) using the filenames above and this section renders automatically.
-
-## 🧩 Features
-
-| Feature | What it does |
+| Home | A grounded answer |
 |---|---|
-| **Company knowledge (RAG)** | Embeds the question, searches company docs, answers **only** from what it finds |
-| **World knowledge** | Toggles to a plain LLM for general writing/research (no retrieval) — `⌘.` to switch |
-| **Citations & anti-hallucination** | Every answer links its source docs; returns *"not found"* when the answer isn't in the corpus |
-| **Upload & remember** | `+` in the chat uploads a text file → stored and merged into Company knowledge instantly |
-| **LINE bot** | Employees ask from LINE; webhook validates signatures and replies with the same RAG answer |
-| **Multi-provider LLM** | Auto-selects **OpenRouter → Claude → Gemini** by which key is set; model configurable |
-| **No-DB fallback** | Without Supabase/Gemini, reads local markdown directly (lexical ranking) — runs on one key |
-| **Query logging** | Logs questions, answered/not, sources & latency (great for spotting knowledge gaps) |
+| ![Home](docs/screenshots/1-home.png) | ![Company answer with citations](docs/screenshots/2-company-answer.png) |
 
-## 🏗 How it works
+## What it does
+
+- **Answers from company docs.** Ask about leave policy, expense limits, where a template lives, an SOP, or a
+  customer project, and get a short answer with the source document linked.
+- **Says "not found" instead of guessing.** If retrieval turns up nothing relevant, it won't invent an answer.
+- **Two modes.** *Company knowledge* searches your documents; *World knowledge* is a plain assistant for general
+  writing and research. Toggle with a click or `Cmd+.`.
+- **Upload to teach it.** Drop a text file into the chat and it becomes part of the knowledge base immediately.
+- **Works on LINE.** The same answers are available through a LINE bot, so people can ask from where they already chat.
+- **Any model.** The chat provider is pluggable — OpenRouter (any model), Claude, or Gemini — chosen by which key you set.
+
+## How it works
 
 ```mermaid
 flowchart TD
-  U["👤 Employee — LINE or Web"] --> Q["/api/ask"]
+  U["Employee — LINE or Web"] --> Q["/api/ask"]
   Q --> Mode{Knowledge mode}
-  Mode -->|Company| RAG["Embed question → search company docs"]
-  Mode -->|World| Direct["Ask the LLM directly"]
-  RAG --> Ctx["Relevant chunks + sources"]
-  Ctx --> LLM["LLM composes a grounded answer + citations"]
+  Mode -->|Company| RAG["Embed the question → search company docs"]
+  Mode -->|World| Direct["Ask the model directly"]
+  RAG --> Ctx["Relevant chunks + their sources"]
+  Ctx --> LLM["Model writes an answer grounded in that context, with citations"]
   Direct --> LLM
   LLM --> U
-  LLM -. "provider auto-select" .-> P["OpenRouter / Claude / Gemini"]
+  LLM -. "provider chosen by env" .-> P["OpenRouter / Claude / Gemini"]
   RAG -. "embeddings" .-> G["Gemini text-embedding-004 (768-dim)"]
 ```
 
-**Grounding rule:** the model is instructed to answer strictly from the retrieved context and to return a
-`NOT_FOUND` sentinel when the docs don't contain the answer — which the app renders as a friendly
-"not in the system" message instead of a guess.
+The model is told to answer only from the retrieved context and to return a `NOT_FOUND` marker when the answer
+isn't there, which the app turns into a plain "not in the system" message. Documents are embedded with Gemini
+and stored in Supabase (`pgvector`); similarity search runs as a SQL function.
 
-## 🛠 Tech stack
+There's also a fallback for quick starts: if Supabase and Gemini aren't configured, Company mode reads the local
+markdown files directly and ranks them by lexical overlap. That means the whole thing runs with a single chat
+API key, no database required — handy for a demo, while the vector path is there for real document sets.
+
+## Model providers
+
+The chat provider is picked automatically from whichever key is present (override with `LLM_PROVIDER`):
+
+1. `OPENROUTER_API_KEY` — OpenRouter, any model via `OPENROUTER_MODEL`
+   (e.g. `anthropic/claude-sonnet-5`, `openai/gpt-4o`, `google/gemini-2.0-flash-001`)
+2. `ANTHROPIC_API_KEY` — Claude directly
+3. `GEMINI_API_KEY` — Gemini
+
+Embeddings always use Gemini (OpenRouter has no embeddings endpoint), so a free `GEMINI_API_KEY` is only needed
+for the full vector-search path. The no-database fallback needs just one chat key.
+
+## Tech stack
 
 | Layer | Choice |
 |---|---|
-| Framework | **Next.js 16** (App Router, Turbopack), React 19, TypeScript |
-| Vector DB | **Supabase** + `pgvector` (cosine similarity via SQL function) |
-| Embeddings | **Gemini** `text-embedding-004` (free tier, 768-dim) |
-| Answer LLM | **OpenRouter** (any model) · **Claude** · **Gemini** — pluggable |
-| Messaging | **LINE Messaging API** (`@line/bot-sdk`) |
+| Framework | Next.js 16 (App Router, Turbopack), React 19, TypeScript |
+| Vector DB | Supabase + `pgvector` (cosine similarity via a SQL function) |
+| Embeddings | Gemini `text-embedding-004` (768-dim) |
+| Answer model | OpenRouter / Claude / Gemini (pluggable) |
+| Messaging | LINE Messaging API (`@line/bot-sdk`) |
 | Styling | Tailwind CSS v4, Inter + Noto Sans Thai |
 
-## 🔌 Model providers
-
-Chat provider is chosen automatically by which key is present (override with `LLM_PROVIDER`):
-
-1. `OPENROUTER_API_KEY` → **OpenRouter** — one key, any model via `OPENROUTER_MODEL`
-   (e.g. `anthropic/claude-sonnet-5`, `openai/gpt-4o`, `google/gemini-2.0-flash-001`)
-2. `ANTHROPIC_API_KEY` → **Claude** directly
-3. `GEMINI_API_KEY` → **Gemini**
-
-> Embeddings always use Gemini (OpenRouter has no embeddings API), so a free `GEMINI_API_KEY` is needed only
-> for the **full** vector-search path. The **no-DB fallback** needs none of it — just one chat key.
-
-## 🚀 Getting started
+## Running it
 
 ```bash
 npm install
-cp .env.local.example .env.local   # add at least one chat key (e.g. OPENROUTER_API_KEY)
+cp .env.local.example .env.local   # add at least one chat key, e.g. OPENROUTER_API_KEY
 npm run dev                         # http://localhost:3000
 ```
 
-That's enough to try **World knowledge** and the **no-DB Company knowledge** fallback.
+That's enough to use World knowledge and the no-database Company knowledge fallback.
 
-**For full vector RAG** (recommended for large doc sets):
+For the full vector search (worth it once you have more than a few documents):
 
 1. Create a [Supabase](https://supabase.com) project and run [`supabase-schema.sql`](supabase-schema.sql) in the SQL editor.
-2. Add `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a free `GEMINI_API_KEY` to `.env.local`.
-3. Ingest the docs:
-   ```bash
-   npm run ingest
-   ```
+2. Add `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a `GEMINI_API_KEY` to `.env.local`.
+3. Ingest the documents: `npm run ingest`.
 
-**Connect LINE:** deploy (e.g. Vercel), then set the webhook URL to
-`https://<your-app>/api/webhook` in the LINE Developers Console.
+To connect LINE, deploy (Vercel works well) and point the webhook to `https://<your-app>/api/webhook` in the
+LINE Developers Console.
 
-## 📂 Project structure
+## Project layout
 
 ```
-data/npc-corp/          Knowledge base (fictional NPC Co., Ltd. docs)
+data/npc-corp/          Knowledge base (fictional NPC Co., Ltd. documents)
 data/uploads/           Files uploaded at runtime (git-ignored)
-scripts/ingest.ts       Chunk + embed + upsert into Supabase
-src/lib/embeddings.ts   Gemini embeddings (768-dim)
+scripts/ingest.ts       Chunk, embed, and upsert into Supabase
+src/lib/embeddings.ts   Gemini embeddings
 src/lib/llm.ts          Provider abstraction (OpenRouter / Claude / Gemini)
-src/lib/rag.ts          RAG core: retrieve → ground → answer + citations (+ no-DB fallback)
+src/lib/rag.ts          Retrieve, ground, answer with citations (plus the no-DB fallback)
 src/app/api/webhook/    LINE webhook
-src/app/api/ask/        REST endpoint for the web playground (company | world)
-src/app/api/upload/     File upload → "remember"
-src/app/page.tsx        Glean-style chat UI
-supabase-schema.sql     pgvector schema + similarity function
+src/app/api/ask/        Web endpoint (company | world)
+src/app/api/upload/     File upload
+src/app/page.tsx        Chat UI
+supabase-schema.sql     pgvector schema and similarity function
 ```
 
-## 🗺 Roadmap
+## Notes
 
-- [ ] PDF / Word upload (currently text files only)
-- [ ] Streaming responses (token-by-token)
-- [ ] Access control by department (e.g. customer data limited to sales)
-- [ ] Admin dashboard over `query_logs` (top questions, unanswered = knowledge gaps)
-- [ ] LIFF page for richer LINE onboarding
+- The documents in `data/npc-corp/` are entirely made up, so nothing sensitive is in this repo.
+- `.env.local` is git-ignored — keep your keys out of version control, and set a spend limit on paid providers.
 
-## 🔒 Notes
+## What's next
 
-- Company data in `data/npc-corp/` is **entirely fictional** — safe to publish.
-- **Never commit `.env.local`** (it's git-ignored). Rotate any key that has been shared, and set a spend limit.
-
----
-
-<p align="center"><sub>Built with Next.js · Supabase · OpenRouter — a Thai-first internal AI assistant.</sub></p>
+- PDF and Word upload (currently plain text)
+- Streaming responses
+- Per-department access control
+- A small dashboard over the query log to surface the questions that go unanswered
