@@ -29,9 +29,11 @@ work. The repo ships with a made-up company ("NPC Co., Ltd.") and sample documen
 
 |  |  |
 |---|---|
-| ![Home](docs/screenshots/1-home.png) | ![Ask with citations](docs/screenshots/2-ask.png) |
+| ![Home — the workspace](docs/screenshots/1-home.png) | ![Ask — grounded answers with citations](docs/screenshots/2-ask.png) |
+| ![Document detail](docs/screenshots/4-document.png) | ![Documents](docs/screenshots/3-documents.png) |
 
-![Documents](docs/screenshots/3-documents.png)
+Each page has a distinct job — **Home** (what's happening in my workspace), **Ask** (what do I want to know),
+**Knowledge** (what does my company know), **Documents** (what files are stored), plus People, Activity, and Settings.
 
 ## What it does
 

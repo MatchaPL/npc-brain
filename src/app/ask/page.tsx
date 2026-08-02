@@ -18,12 +18,10 @@ interface Msg {
   loading?: boolean;
 }
 
-const HISTORY = [
-  "Sick-leave certificate rules",
-  "Domestic travel per-diem",
-  "Quotation template location",
-  "Purchase request approval limits",
-  "Machine safety incident steps",
+const HISTORY_GROUPS: { label: string; items: string[] }[] = [
+  { label: "Today", items: ["Sick-leave certificate rules", "Domestic travel per-diem"] },
+  { label: "Yesterday", items: ["Quotation template location", "Purchase request approval limits"] },
+  { label: "This Week", items: ["Machine safety incident steps", "Onboarding checklist", "Expense claim deadline"] },
 ];
 
 // deterministic pseudo page number per source (demo data has no real PDF pages)
@@ -126,26 +124,31 @@ function Ask() {
             New conversation
           </button>
         </div>
-        <div className="px-2">
-          <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">
-            History
-          </div>
-          <ul className="space-y-0.5">
-            {HISTORY.map((h, i) => (
-              <li key={h}>
-                <button
-                  className={`flex w-full items-center gap-2 truncate rounded-[8px] px-2.5 py-2 text-left text-[13px] ${
-                    i === 0 && messages.length > 0
-                      ? "bg-[#eef2ff] text-[#2f5aff]"
-                      : "text-[#374151] hover:bg-[#f1f1f3]"
-                  }`}
-                >
-                  <Icon name="clock" className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                  <span className="truncate">{h}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+          {HISTORY_GROUPS.map((group, gi) => (
+            <div key={group.label} className="mb-3">
+              <div className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">
+                {group.label}
+              </div>
+              <ul className="space-y-0.5">
+                {group.items.map((h, i) => {
+                  const active = gi === 0 && i === 0 && messages.length > 0;
+                  return (
+                    <li key={h}>
+                      <button
+                        className={`flex w-full items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-[13px] ${
+                          active ? "bg-[#eef2ff] text-[#2f5aff]" : "text-[#374151] hover:bg-[#f1f1f3]"
+                        }`}
+                      >
+                        <Icon name="clock" className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                        <span className="truncate">{h}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -182,7 +185,7 @@ function Ask() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything about your company..."
+              placeholder="Ask NPC about your organization..."
               className="w-full bg-transparent text-[15px] outline-none placeholder:text-[#9ca3af]"
             />
             <button

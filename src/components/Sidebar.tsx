@@ -22,11 +22,13 @@ export default function Sidebar() {
     <aside className="flex w-[236px] shrink-0 flex-col border-r border-[#ececec] bg-[#fafafb]">
       {/* logo / workspace */}
       <div className="flex items-center gap-2.5 px-4 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2f5aff] text-[15px] font-semibold text-white">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2f5aff] text-[13px] font-semibold text-white">
           N
         </div>
         <div className="min-w-0">
-          <div className="text-[15px] font-semibold leading-tight text-[#111827]">NPC</div>
+          <div className="text-[14px] font-semibold leading-tight tracking-tight text-[#111827]">
+            NPC
+          </div>
           <div className="truncate text-[11px] text-[#6b7280]">{WORKSPACE.name}</div>
         </div>
       </div>

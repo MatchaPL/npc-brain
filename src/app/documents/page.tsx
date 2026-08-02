@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { DOCUMENTS, COLLECTIONS } from "@/lib/demo";
 
@@ -61,12 +62,12 @@ export default function DocumentsPage() {
                   return (
                     <tr key={d.name} className="border-b border-[#f4f4f6] last:border-0 hover:bg-[#fafafb]">
                       <td className="px-5 py-3">
-                        <div className="flex items-center gap-2.5">
+                        <Link href={`/documents/${d.slug}`} className="flex items-center gap-2.5 group">
                           <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f4f4f6] text-[#6b7280]">
                             <Icon name="fileText" className="h-4 w-4" />
                           </span>
-                          <span className="font-medium text-[#111827]">{d.name}</span>
-                        </div>
+                          <span className="font-medium text-[#111827] group-hover:text-[#2f5aff]">{d.name}</span>
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
                         <span

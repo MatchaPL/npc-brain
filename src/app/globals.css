@@ -31,6 +31,25 @@ body {
   background: #dbe3ff;
 }
 
+/* subtle, professional motion */
+.hover-lift {
+  transition:
+    transform 150ms ease-out,
+    box-shadow 150ms ease-out,
+    border-color 150ms ease-out;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+.press {
+  transition:
+    opacity 150ms ease-out,
+    background-color 150ms ease-out;
+}
+.press:hover {
+  opacity: 0.95;
+}
+
 /* thin, calm scrollbars */
 ::-webkit-scrollbar {
   width: 10px;
