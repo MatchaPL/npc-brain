@@ -1,5 +1,7 @@
 <h1 align="center">NPC Brain</h1>
 
+<p align="center"><b><i>Knowledge, not just chat.</i></b></p>
+
 <p align="center">
   An internal knowledge assistant. Employees ask a question — on LINE or in the web app —
   <br/>and it answers from the company's own documents, with a link back to the source.
