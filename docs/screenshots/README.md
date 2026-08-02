@@ -4,9 +4,8 @@ Drop your captures here with these exact filenames — the main README reference
 
 | Filename | What to capture |
 |---|---|
-| `1-home.png` | The landing screen (hero + prompt cards) |
-| `2-company-answer.png` | A Company-knowledge answer showing the citations box |
-| `3-world-answer.png` | A World-knowledge answer (optional) |
-| `4-upload.png` | The chat after uploading a file (file chip + "remembered" message) (optional) |
+| `1-home.png` | Home — hero, Knowledge Collections, and dashboard |
+| `2-ask.png` | Ask — three-column layout with the Sources & Citations panel |
+| `3-documents.png` | Documents — the enterprise table |
 
-Tip: run `npm run dev`, capture at a ~1000px width for a crisp look, and keep the light theme.
+Tip: run `npm run dev` and capture at ~1440px width with a 2x scale for a crisp look.

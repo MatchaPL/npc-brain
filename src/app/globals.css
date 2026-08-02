@@ -1,21 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --sidebar: #f7f7f8;
-  --foreground: #1a1a1f;
-  --muted: #6b6b76;
-  --border: #ececef;
-  --accent: #4f46e5;
-  --accent-soft: #eef0fe;
+  --primary: #2f5aff;
+  --primary-hover: #2549e0;
+  --primary-soft: #eef2ff;
+  --bg: #fafafb;
+  --surface: #ffffff;
+  --border: #ececec;
+  --text: #111827;
+  --text-2: #6b7280;
+  --success: #22c55e;
 }
 
 html,
 body {
   max-width: 100vw;
-  background: var(--background);
-  color: var(--foreground);
-  /* Inter for Latin, Noto Sans Thai for Thai glyphs (per-glyph fallback) */
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-inter), var(--font-noto-thai), "Inter",
     "Noto Sans Thai", -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -24,4 +25,24 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: #dbe3ff;
+}
+
+/* thin, calm scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #e3e3e6;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d2d2d6;
+  background-clip: content-box;
 }

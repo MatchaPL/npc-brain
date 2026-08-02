@@ -1,74 +1,75 @@
-<h1 align="center">NPC Brain</h1>
+<h1 align="center">NPC</h1>
 
 <p align="center"><b><i>Knowledge, not just chat.</i></b></p>
 
 <p align="center">
-  An internal knowledge assistant. Employees ask a question — on LINE or in the web app —
-  <br/>and it answers from the company's own documents, with a link back to the source.
+  An enterprise knowledge workspace. It turns a company's documents into trusted, searchable
+  <br/>knowledge — people ask a question and get an answer with citations they can verify.
 </p>
 
 <p align="center">
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white">
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-pgvector-3ECF8E?logo=supabase&logoColor=white">
-  <img alt="OpenRouter" src="https://img.shields.io/badge/LLM-OpenRouter%20%C2%B7%20Claude%20%C2%B7%20Gemini-4f46e5">
+  <img alt="OpenRouter" src="https://img.shields.io/badge/LLM-OpenRouter%20%C2%B7%20Claude%20%C2%B7%20Gemini-2f5aff">
   <img alt="LINE" src="https://img.shields.io/badge/Bot-LINE%20Messaging%20API-00C300?logo=line&logoColor=white">
 </p>
 
 ---
 
-Most company chatbots either don't know your internal stuff or make it up. NPC Brain does neither: it only
-answers from documents you give it, always shows where the answer came from, and replies "not found" when the
-answer isn't in the docs.
+NPC is not a chatbot. It's a workspace for organizational knowledge: documents live in collections, every
+answer is grounded in those documents and cites them by name and page, and if the answer isn't in the
+knowledge base it says so instead of guessing.
 
-I built it to work through a practical RAG setup end to end — retrieval, grounding, citations, a LINE
-integration, and a chat UI that doesn't feel like a demo. The repo ships with a made-up company
-("NPC Co., Ltd.") and a handful of sample HR, finance, IT, and SOP documents, so it runs out of the box.
+I built it to work through a real enterprise RAG product end to end — retrieval, grounding, verifiable
+citations, a document workspace, and a clean interface that feels like software people would actually use at
+work. The repo ships with a made-up company ("NPC Co., Ltd.") and sample documents, so it runs out of the box.
 
 ## Screenshots
 
-| Home | A grounded answer |
+|  |  |
 |---|---|
-| ![Home](docs/screenshots/1-home.png) | ![Company answer with citations](docs/screenshots/2-company-answer.png) |
+| ![Home](docs/screenshots/1-home.png) | ![Ask with citations](docs/screenshots/2-ask.png) |
+
+![Documents](docs/screenshots/3-documents.png)
 
 ## What it does
 
-- **Answers from company docs.** Ask about leave policy, expense limits, where a template lives, an SOP, or a
-  customer project, and get a short answer with the source document linked.
-- **Says "not found" instead of guessing.** If retrieval turns up nothing relevant, it won't invent an answer.
-- **Two modes.** *Company knowledge* searches your documents; *World knowledge* is a plain assistant for general
-  writing and research. Toggle with a click or `Cmd+.`.
-- **Upload to teach it.** Drop a text file into the chat and it becomes part of the knowledge base immediately.
-- **Works on LINE.** The same answers are available through a LINE bot, so people can ask from where they already chat.
-- **Any model.** The chat provider is pluggable — OpenRouter (any model), Claude, or Gemini — chosen by which key you set.
+- **Ask, and get grounded answers.** Questions are answered from the company's documents, and every answer
+  shows its sources with document name and page number in a dedicated citations panel.
+- **Says "not found" instead of guessing.** If nothing relevant is retrieved, NPC declines rather than inventing an answer.
+- **Knowledge Collections.** Documents are organized into collections (HR, Production, Safety, Engineering,
+  Finance) so answers stay accurate and easy to govern.
+- **A real document workspace.** Home dashboard, an enterprise documents table with indexing status, people,
+  and an activity feed — not just a chat box.
+- **Works on LINE too.** The same grounded answers are available through a LINE bot.
+- **Any model.** The answer model is pluggable — OpenRouter (any model), Claude, or Gemini — chosen by which key you set.
 
 ## How it works
 
 ```mermaid
 flowchart TD
   U["Employee — LINE or Web"] --> Q["/api/ask"]
-  Q --> Mode{Knowledge mode}
-  Mode -->|Company| RAG["Embed the question → search company docs"]
-  Mode -->|World| Direct["Ask the model directly"]
-  RAG --> Ctx["Relevant chunks + their sources"]
-  Ctx --> LLM["Model writes an answer grounded in that context, with citations"]
-  Direct --> LLM
-  LLM --> U
+  Q --> RAG["Embed the question → search the knowledge base"]
+  RAG --> Ctx["Relevant passages + their source documents"]
+  Ctx --> LLM["Model writes an answer grounded in that context"]
+  LLM --> A["Answer + citations (document name, page)"]
+  A --> U
   LLM -. "provider chosen by env" .-> P["OpenRouter / Claude / Gemini"]
   RAG -. "embeddings" .-> G["Gemini text-embedding-004 (768-dim)"]
 ```
 
 The model is told to answer only from the retrieved context and to return a `NOT_FOUND` marker when the answer
-isn't there, which the app turns into a plain "not in the system" message. Documents are embedded with Gemini
-and stored in Supabase (`pgvector`); similarity search runs as a SQL function.
+isn't there, which the app turns into a plain "not in the knowledge base" message. Documents are embedded with
+Gemini and stored in Supabase (`pgvector`); similarity search runs as a SQL function.
 
-There's also a fallback for quick starts: if Supabase and Gemini aren't configured, Company mode reads the local
-markdown files directly and ranks them by lexical overlap. That means the whole thing runs with a single chat
-API key, no database required — handy for a demo, while the vector path is there for real document sets.
+There's also a fallback for quick starts: if Supabase and Gemini aren't configured, it reads the local markdown
+files directly and ranks them by lexical overlap — so the whole thing runs with a single chat API key, no
+database required, while the vector path is there for real document sets.
 
 ## Model providers
 
-The chat provider is picked automatically from whichever key is present (override with `LLM_PROVIDER`):
+The answer provider is picked automatically from whichever key is present (override with `LLM_PROVIDER`):
 
 1. `OPENROUTER_API_KEY` — OpenRouter, any model via `OPENROUTER_MODEL`
    (e.g. `anthropic/claude-sonnet-5`, `openai/gpt-4o`, `google/gemini-2.0-flash-001`)
@@ -87,7 +88,7 @@ for the full vector-search path. The no-database fallback needs just one chat ke
 | Embeddings | Gemini `text-embedding-004` (768-dim) |
 | Answer model | OpenRouter / Claude / Gemini (pluggable) |
 | Messaging | LINE Messaging API (`@line/bot-sdk`) |
-| Styling | Tailwind CSS v4, Inter + Noto Sans Thai |
+| Design | Tailwind CSS v4, Inter + Noto Sans Thai, outline icons |
 
 ## Running it
 
@@ -97,7 +98,7 @@ cp .env.local.example .env.local   # add at least one chat key, e.g. OPENROUTER_
 npm run dev                         # http://localhost:3000
 ```
 
-That's enough to use World knowledge and the no-database Company knowledge fallback.
+That's enough to try the Ask page and the no-database fallback.
 
 For the full vector search (worth it once you have more than a few documents):
 
@@ -105,8 +106,7 @@ For the full vector search (worth it once you have more than a few documents):
 2. Add `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a `GEMINI_API_KEY` to `.env.local`.
 3. Ingest the documents: `npm run ingest`.
 
-To connect LINE, deploy (Vercel works well) and point the webhook to `https://<your-app>/api/webhook` in the
-LINE Developers Console.
+To connect LINE, deploy (Vercel works well) and point the webhook to `https://<your-app>/api/webhook`.
 
 ## Project layout
 
@@ -114,13 +114,12 @@ LINE Developers Console.
 data/npc-corp/          Knowledge base (fictional NPC Co., Ltd. documents)
 data/uploads/           Files uploaded at runtime (git-ignored)
 scripts/ingest.ts       Chunk, embed, and upsert into Supabase
-src/lib/embeddings.ts   Gemini embeddings
-src/lib/llm.ts          Provider abstraction (OpenRouter / Claude / Gemini)
 src/lib/rag.ts          Retrieve, ground, answer with citations (plus the no-DB fallback)
-src/app/api/webhook/    LINE webhook
-src/app/api/ask/        Web endpoint (company | world)
-src/app/api/upload/     File upload
-src/app/page.tsx        Chat UI
+src/lib/llm.ts          Provider abstraction (OpenRouter / Claude / Gemini)
+src/lib/embeddings.ts   Gemini embeddings
+src/components/          Sidebar, icons
+src/app/                 Home, Ask, Knowledge, Documents, People, Activity, Settings
+src/app/api/            ask, upload, webhook (LINE)
 supabase-schema.sql     pgvector schema and similarity function
 ```
 
@@ -131,7 +130,7 @@ supabase-schema.sql     pgvector schema and similarity function
 
 ## What's next
 
-- PDF and Word upload (currently plain text)
+- PDF and Word ingestion (currently plain text and markdown)
+- SSO and per-collection access control
 - Streaming responses
-- Per-department access control
-- A small dashboard over the query log to surface the questions that go unanswered
+- A dashboard over the query log to surface questions that go unanswered

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
+import Sidebar from "@/components/Sidebar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,16 +18,21 @@ const notoThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "NPC Brain — สมองของบริษัท",
-  description: "ผู้ช่วย AI ที่ตอบจากเอกสารภายในบริษัทจริง ผ่าน LINE",
+  title: "NPC — Enterprise Knowledge Workspace",
+  description: "The AI that knows your company. Turn documents into trusted, searchable knowledge.",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" className={`${inter.variable} ${notoThai.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${notoThai.variable}`}>
+      <body>
+        <div className="flex h-screen overflow-hidden">
+          <Sidebar />
+          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+        </div>
+      </body>
     </html>
   );
 }
