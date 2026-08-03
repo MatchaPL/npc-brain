@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import { WorkspaceProvider } from "@/lib/workspace";
+import AppShell from "@/components/AppShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,10 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${notoThai.variable}`}>
       <body>
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
-        </div>
+        <WorkspaceProvider>
+          <AppShell>{children}</AppShell>
+        </WorkspaceProvider>
       </body>
     </html>
   );

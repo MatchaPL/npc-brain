@@ -52,18 +52,13 @@ export default function Home() {
     <div className="min-h-full">
       <header className="flex items-center justify-between border-b border-[#ececec] bg-white px-8 py-3.5">
         <span className="text-[14px] font-medium text-[#111827]">Home</span>
-        <div className="flex items-center gap-2">
-          <button className="press flex h-9 w-9 items-center justify-center rounded-[10px] text-[#6b7280] hover:bg-[#f1f1f3]">
-            <Icon name="bell" className="h-[18px] w-[18px]" />
-          </button>
-          <Link
-            href="/documents"
-            className="press flex items-center gap-1.5 rounded-[10px] bg-[#2f5aff] px-3.5 py-2 text-[13px] font-medium text-white"
-          >
-            <Icon name="upload" className="h-4 w-4" />
-            Add document
-          </Link>
-        </div>
+        <Link
+          href="/documents"
+          className="press flex items-center gap-1.5 rounded-[10px] bg-[#2f5aff] px-3.5 py-2 text-[13px] font-medium text-white"
+        >
+          <Icon name="upload" className="h-4 w-4" />
+          Add document
+        </Link>
       </header>
 
       <div className="mx-auto max-w-5xl px-8 pb-16">

@@ -47,6 +47,22 @@ Each page has a distinct job — **Home** (what's happening in my workspace), **
 - **Works on LINE too.** The same grounded answers are available through a LINE bot.
 - **Any model.** The answer model is pluggable — OpenRouter (any model), Claude, or Gemini — chosen by which key you set.
 
+## Organization & access
+
+Sign-in is **LINE Login only**. A new user either creates an organization (becoming its
+Owner) or opens an invitation link and requests to join. Owners and Admins generate secure,
+expiring invite links, share them over LINE, and approve requests from a notification bell —
+assigning role, department, and job title on approval. Roles are Owner / Admin / Member.
+
+| Login | Member approval |
+|---|---|
+| ![LINE login](docs/screenshots/5-login.png) | ![Approve a join request](docs/screenshots/6-approval.png) |
+
+The onboarding flow (login, create org, invitations, join requests, approvals, notifications,
+member management) is implemented in the UI. The database schema
+([`supabase-auth-schema.sql`](supabase-auth-schema.sql)) and the LINE integration, API, and
+security model ([`docs/AUTH.md`](docs/AUTH.md)) are documented for wiring the real backend.
+
 ## How it works
 
 ```mermaid
