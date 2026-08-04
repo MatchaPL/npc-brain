@@ -11,6 +11,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  liffEnabled,
+  liffIsLoggedIn,
+  liffLoginRedirect,
+  liffGetIdToken,
+  liffLogout,
+  verifyLineIdToken,
+} from "./line";
 
 export type Role = "Owner" | "Admin" | "Member";
 export type MemberStatus = "Active" | "Pending approval" | "Invited" | "Rejected" | "Suspended";
@@ -168,6 +176,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (raw) setState(JSON.parse(raw));
     } catch {}
     setReady(true);
+
+    // If LINE Login (LIFF) is configured, hydrate the real identity after redirect.
+    if (liffEnabled()) {
+      (async () => {
+        if (await liffIsLoggedIn()) {
+          const u = await verifyLineIdToken(await liffGetIdToken());
+          if (u) setState((s) => ({ ...s, user: u }));
+        }
+      })();
+    }
   }, []);
 
   useEffect(() => {
@@ -186,8 +204,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     isAdmin,
     unread,
 
-    loginWithLine: (identity = OWNER) => setState((s) => ({ ...s, user: identity })),
-    logout: () => setState(EMPTY),
+    loginWithLine: (identity) => {
+      // Explicit identity = the invite flow's simulated visitor (mock path).
+      if (identity) return setState((s) => ({ ...s, user: identity }));
+      if (liffEnabled()) {
+        (async () => {
+          if (!(await liffIsLoggedIn())) return liffLoginRedirect();
+          const u = await verifyLineIdToken(await liffGetIdToken());
+          if (u) setState((s) => ({ ...s, user: u }));
+        })();
+        return;
+      }
+      setState((s) => ({ ...s, user: OWNER })); // local dev mock
+    },
+    logout: () => {
+      liffLogout();
+      setState(EMPTY);
+    },
 
     createOrg: (name, description) =>
       setState((s) => {

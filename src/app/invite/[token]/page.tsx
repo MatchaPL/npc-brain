@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { useWorkspace, randomVisitor, avatarColor, type LineUser } from "@/lib/workspace";
+import { liffEnabled, liffIsLoggedIn, liffLoginRedirect, liffGetIdToken, verifyLineIdToken } from "@/lib/line";
 
 function Brand() {
   return (
@@ -38,6 +39,29 @@ export default function InvitePage() {
 
   const [visitor, setVisitor] = useState<LineUser | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  // With LIFF configured, hydrate the recipient's real LINE identity after redirect.
+  useEffect(() => {
+    if (!liffEnabled() || visitor) return;
+    (async () => {
+      if (await liffIsLoggedIn()) {
+        const u = await verifyLineIdToken(await liffGetIdToken());
+        if (u) setVisitor(u);
+      }
+    })();
+  }, [visitor]);
+
+  function continueWithLine() {
+    if (liffEnabled()) {
+      (async () => {
+        if (!(await liffIsLoggedIn())) return liffLoginRedirect();
+        const u = await verifyLineIdToken(await liffGetIdToken());
+        if (u) setVisitor(u);
+      })();
+      return;
+    }
+    setVisitor(randomVisitor()); // local dev mock
+  }
 
   const state = invitationState(token);
   const inv = getInvitation(token);
@@ -137,7 +161,7 @@ export default function InvitePage() {
           Continue with LINE to request access to this organization&apos;s knowledge workspace.
         </p>
         <button
-          onClick={() => setVisitor(randomVisitor())}
+          onClick={continueWithLine}
           className="press mt-6 flex w-full items-center justify-center gap-2.5 rounded-[10px] bg-[#06c755] px-4 py-3 text-[15px] font-medium text-white"
         >
           <LineGlyph className="h-5 w-5" />
