@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db, persistenceOn, signSession, SESSION_COOKIE } from "@/lib/db";
 
-// Verifies a LINE Login ID token server-side against LINE's verify endpoint.
-// Never trust identity sent from the client — this checks the token's signature,
-// audience (channel ID), and expiry, and returns the trusted profile.
-//
-// Channel ID is the numeric prefix of the LIFF ID (e.g. 2010371902-XXXX -> 2010371902),
-// or set LINE_LOGIN_CHANNEL_ID explicitly.
+// Verifies a LINE Login ID token server-side, upserts the user (when Supabase is
+// configured), and sets an HTTP-only session cookie. Never trust client identity.
 function channelId() {
   return (
     process.env.LINE_LOGIN_CHANNEL_ID ||
@@ -28,27 +25,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "LINE channel not configured" }, { status: 500 });
   }
 
-  const res = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+  const verify = await fetch("https://api.line.me/oauth2/v2.1/verify", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ id_token: idToken, client_id }),
   });
-  const data = await res.json();
-
-  if (!res.ok) {
+  const data = await verify.json();
+  if (!verify.ok) {
     return NextResponse.json(
       { ok: false, error: data.error_description || data.error || "token verification failed" },
       { status: 401 },
     );
   }
 
-  // data: { iss, sub, aud, exp, iat, name, picture, ... }
-  return NextResponse.json({
-    ok: true,
-    user: {
-      id: data.sub as string,
-      displayName: (data.name as string) || "LINE user",
-      pictureUrl: (data.picture as string) || "",
-    },
+  const line = data.sub as string;
+  const name = (data.name as string) || "LINE user";
+  const pic = (data.picture as string) || "";
+
+  // Upsert the user and use the DB id as the stable identity.
+  let uid = line;
+  if (persistenceOn()) {
+    const { data: u } = await db()
+      .from("users")
+      .upsert(
+        { line_user_id: line, display_name: name, profile_image_url: pic, updated_at: new Date().toISOString() },
+        { onConflict: "line_user_id" },
+      )
+      .select("id")
+      .single();
+    if (u) uid = u.id;
+  }
+
+  const res = NextResponse.json({ ok: true, user: { id: uid, displayName: name, pictureUrl: pic } });
+  res.cookies.set(SESSION_COOKIE, signSession({ uid, line, name, pic }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
   });
+  return res;
 }

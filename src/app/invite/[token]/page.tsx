@@ -6,6 +6,8 @@ import { Icon } from "@/components/icons";
 import { useWorkspace, randomVisitor, avatarColor, type LineUser } from "@/lib/workspace";
 import { liffEnabled, liffIsLoggedIn, liffLoginRedirect, liffGetIdToken, verifyLineIdToken } from "@/lib/line";
 
+const PERSIST = typeof window !== "undefined" && process.env.NEXT_PUBLIC_PERSISTENCE === "supabase";
+
 function Brand() {
   return (
     <div className="flex items-center justify-center gap-2">
@@ -14,7 +16,6 @@ function Brand() {
     </div>
   );
 }
-
 function LineGlyph({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
@@ -22,7 +23,6 @@ function LineGlyph({ className = "" }: { className?: string }) {
     </svg>
   );
 }
-
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#fafafb] px-6">
@@ -39,6 +39,16 @@ export default function InvitePage() {
 
   const [visitor, setVisitor] = useState<LineUser | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [preview, setPreview] = useState<{ valid: boolean; state: string; orgName?: string; inviter?: string } | null>(null);
+
+  // Persistence mode: fetch the public invite preview from the server.
+  useEffect(() => {
+    if (!PERSIST) return;
+    fetch(`/api/invite/${token}`)
+      .then((r) => r.json())
+      .then((d) => setPreview(d))
+      .catch(() => setPreview({ valid: false, state: "notfound" }));
+  }, [token]);
 
   // With LIFF configured, hydrate the recipient's real LINE identity after redirect.
   useEffect(() => {
@@ -50,6 +60,14 @@ export default function InvitePage() {
       }
     })();
   }, [visitor]);
+
+  const inv = PERSIST ? null : getInvitation(token);
+  const state = PERSIST ? preview?.state ?? "loading" : invitationState(token);
+  const invalid = PERSIST ? (preview ? !preview.valid : false) : state !== "valid" || !org;
+  const orgName = PERSIST ? preview?.orgName ?? "this organization" : org?.name ?? "this organization";
+  const inviter = PERSIST
+    ? preview?.inviter ?? "an administrator"
+    : members.find((m) => m.userId === inv?.createdBy)?.displayName ?? "an administrator";
 
   function continueWithLine() {
     if (liffEnabled()) {
@@ -63,12 +81,37 @@ export default function InvitePage() {
     setVisitor(randomVisitor()); // local dev mock
   }
 
-  const state = invitationState(token);
-  const inv = getInvitation(token);
-  const inviter = members.find((m) => m.userId === inv?.createdBy)?.displayName ?? "an administrator";
+  async function submit() {
+    if (PERSIST) {
+      const r = await fetch(`/api/invite/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (r.ok) setSubmitted(true);
+      return;
+    }
+    if (visitor) {
+      requestToJoin(visitor, token, {
+        department: inv?.defaultDepartment ?? "",
+        jobTitle: inv?.defaultJobTitle ?? "",
+      });
+      setSubmitted(true);
+    }
+  }
 
-  // invalid / expired / revoked / used
-  if (state !== "valid" || !org) {
+  // loading (persist preview not yet fetched)
+  if (PERSIST && preview === null) {
+    return (
+      <Shell>
+        <div className="rounded-[14px] border border-[#ececec] bg-white p-7 text-center text-[14px] text-[#9ca3af]">
+          Loading invitation…
+        </div>
+      </Shell>
+    );
+  }
+
+  if (invalid) {
     const copy: Record<string, { title: string; msg: string }> = {
       expired: { title: "Invitation expired", msg: "This invitation link is no longer active. Please request a new link from the organization administrator." },
       revoked: { title: "Invitation revoked", msg: "This invitation link has been revoked. Please request a new link from the organization administrator." },
@@ -89,7 +132,6 @@ export default function InvitePage() {
     );
   }
 
-  // submitted
   if (submitted) {
     return (
       <Shell>
@@ -100,7 +142,7 @@ export default function InvitePage() {
           <h1 className="mt-4 text-[18px] font-semibold text-[#111827]">Request submitted</h1>
           <p className="mt-2 text-[14px] leading-relaxed text-[#6b7280]">
             An administrator will review your request. You will receive access to{" "}
-            <span className="font-medium text-[#374151]">{org.name}</span> after approval.
+            <span className="font-medium text-[#374151]">{orgName}</span> after approval.
           </p>
           <button
             onClick={() => router.push("/")}
@@ -113,13 +155,12 @@ export default function InvitePage() {
     );
   }
 
-  // confirm (after LINE login)
   if (visitor) {
     return (
       <Shell>
         <div className="rounded-[14px] border border-[#ececec] bg-white p-7 text-center">
           <Brand />
-          <h1 className="mt-6 text-[20px] font-bold tracking-tight text-[#111827]">Join {org.name}</h1>
+          <h1 className="mt-6 text-[20px] font-bold tracking-tight text-[#111827]">Join {orgName}</h1>
           <p className="mt-1 text-[13px] text-[#6b7280]">Invited by {inviter}</p>
 
           <div className="mt-6 flex items-center gap-3 rounded-[12px] border border-[#ececec] bg-[#fafafb] p-3 text-left">
@@ -132,16 +173,7 @@ export default function InvitePage() {
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              requestToJoin(visitor, token, {
-                department: inv?.defaultDepartment ?? "",
-                jobTitle: inv?.defaultJobTitle ?? "",
-              });
-              setSubmitted(true);
-            }}
-            className="press mt-6 w-full rounded-[10px] bg-[#2f5aff] px-4 py-3 text-[15px] font-medium text-white"
-          >
+          <button onClick={submit} className="press mt-6 w-full rounded-[10px] bg-[#2f5aff] px-4 py-3 text-[15px] font-medium text-white">
             Request to join
           </button>
           <p className="mt-3 text-[12px] text-[#9ca3af]">You won&apos;t get access until an administrator approves your request.</p>
@@ -150,12 +182,11 @@ export default function InvitePage() {
     );
   }
 
-  // landing
   return (
     <Shell>
       <div className="rounded-[14px] border border-[#ececec] bg-white p-7 text-center">
         <Brand />
-        <h1 className="mt-6 text-[20px] font-bold tracking-tight text-[#111827]">Join {org.name}</h1>
+        <h1 className="mt-6 text-[20px] font-bold tracking-tight text-[#111827]">Join {orgName}</h1>
         <p className="mt-1 text-[13px] text-[#6b7280]">Invited by {inviter}</p>
         <p className="mt-4 text-[14px] leading-relaxed text-[#6b7280]">
           Continue with LINE to request access to this organization&apos;s knowledge workspace.

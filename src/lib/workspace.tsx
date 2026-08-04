@@ -147,8 +147,8 @@ interface Ctx extends State {
     jobTitle: string;
     expiresDays: number;
     singleUse: boolean;
-  }) => Invitation;
-  regenerateInvitation: (id: string) => Invitation | undefined;
+  }) => Promise<Invitation>;
+  regenerateInvitation: (id: string) => Promise<Invitation | undefined>;
   revokeInvitation: (id: string) => void;
   getInvitation: (tok: string) => Invitation | undefined;
   invitationState: (tok: string) => "valid" | "expired" | "revoked" | "used" | "notfound";
@@ -166,17 +166,59 @@ interface Ctx extends State {
 
 const WorkspaceContext = createContext<Ctx | null>(null);
 
+// When Supabase is configured (server) the app runs against the real API; a public
+// flag lets the client know to use it instead of the localStorage mock.
+const PERSIST = typeof window !== "undefined" && process.env.NEXT_PUBLIC_PERSISTENCE === "supabase";
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(EMPTY);
   const [ready, setReady] = useState(false);
 
+  function applyWorkspace(w?: Partial<State>) {
+    if (!w) return;
+    setState({
+      user: w.user ?? null,
+      org: w.org ?? null,
+      members: w.members ?? [],
+      invitations: w.invitations ?? [],
+      joinRequests: w.joinRequests ?? [],
+      notifications: w.notifications ?? [],
+    });
+  }
+  async function refresh() {
+    try {
+      const r = await fetch("/api/workspace");
+      if (r.ok) applyWorkspace(await r.json());
+      else setState((s) => ({ ...s, user: null }));
+    } catch {}
+  }
+  async function command(action: string, payload: Record<string, unknown> = {}) {
+    const r = await fetch("/api/workspace", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload }),
+    });
+    const d = (await r.json().catch(() => ({}))) as { workspace?: State; token?: string };
+    if (d.workspace) applyWorkspace(d.workspace);
+    return d;
+  }
+
   useEffect(() => {
+    if (PERSIST) {
+      (async () => {
+        if (liffEnabled() && (await liffIsLoggedIn())) {
+          await verifyLineIdToken(await liffGetIdToken()); // sets the session cookie
+        }
+        await refresh();
+        setReady(true);
+      })();
+      return;
+    }
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setState(JSON.parse(raw));
     } catch {}
     setReady(true);
-
     // If LINE Login (LIFF) is configured, hydrate the real identity after redirect.
     if (liffEnabled()) {
       (async () => {
@@ -186,10 +228,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         }
       })();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (ready) localStorage.setItem(KEY, JSON.stringify(state));
+    if (ready && !PERSIST) localStorage.setItem(KEY, JSON.stringify(state));
   }, [state, ready]);
 
   const isAdmin = (() => {
@@ -292,7 +335,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         createdAt: Date.now(),
       };
       setState((s) => ({ ...s, invitations: [inv, ...s.invitations] }));
-      return inv;
+      return Promise.resolve(inv);
     },
 
     regenerateInvitation: (id) => {
@@ -305,7 +348,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           return next;
         }),
       }));
-      return next;
+      return Promise.resolve(next);
     },
 
     revokeInvitation: (id) =>
@@ -411,7 +454,64 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, notifications: s.notifications.map((n) => ({ ...n, isRead: true })) })),
   };
 
-  return <WorkspaceContext.Provider value={api}>{children}</WorkspaceContext.Provider>;
+  // In persistence mode, route mutations through the API and reload from the server.
+  const value: Ctx = PERSIST
+    ? {
+        ...api,
+        loginWithLine: (identity) => {
+          if (identity) return; // no simulated visitor in real mode
+          if (!liffEnabled()) return;
+          (async () => {
+            if (!(await liffIsLoggedIn())) return liffLoginRedirect();
+            await verifyLineIdToken(await liffGetIdToken());
+            await refresh();
+          })();
+        },
+        logout: () => {
+          liffLogout();
+          setState(EMPTY);
+        },
+        createOrg: (name, description) => {
+          command("createOrg", { name, description });
+        },
+        updateOrg: (patch) => {
+          command("updateOrg", patch as Record<string, unknown>);
+        },
+        createInvitation: async (i) => {
+          const d = await command("createInvitation", i);
+          const inv = d.workspace?.invitations?.[0];
+          return inv ? { ...inv, token: d.token ?? "" } : ({} as Invitation);
+        },
+        regenerateInvitation: async (id) => {
+          const d = await command("regenerateInvitation", { id });
+          const inv = d.workspace?.invitations?.find((x) => x.id === id);
+          return inv ? { ...inv, token: d.token ?? "" } : undefined;
+        },
+        revokeInvitation: (id) => {
+          command("revokeInvitation", { id });
+        },
+        approveRequest: (id, assign) => {
+          command("approve", { id, ...assign });
+        },
+        rejectRequest: (id, reason) => {
+          command("reject", { id, reason });
+        },
+        updateMember: (id, patch) => {
+          command("updateMember", { id, patch });
+        },
+        removeMember: (id) => {
+          command("removeMember", { id });
+        },
+        markRead: (id) => {
+          command("readNotif", { id });
+        },
+        markAllRead: () => {
+          command("readAll");
+        },
+      }
+    : api;
+
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
 export function useWorkspace() {

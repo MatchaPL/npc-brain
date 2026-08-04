@@ -36,8 +36,8 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
 
   const url = invite ? inviteUrl(invite.token) : "";
 
-  function create() {
-    const inv = createInvitation({
+  async function create() {
+    const inv = await createInvitation({
       role,
       department: dept,
       jobTitle: title,
@@ -135,8 +135,8 @@ export default function InviteModal({ onClose }: { onClose: () => void }) {
                   Share via LINE
                 </button>
                 <button
-                  onClick={() => {
-                    const next = regenerateInvitation(invite.id);
+                  onClick={async () => {
+                    const next = await regenerateInvitation(invite.id);
                     if (next) setInvite(next);
                   }}
                   className="press flex items-center justify-center gap-1.5 rounded-[10px] border border-[#e6e6e9] bg-white px-3 py-2 text-[13px] font-medium text-[#374151] hover:bg-[#f7f7f8]"
