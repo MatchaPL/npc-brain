@@ -5,15 +5,6 @@ import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { useWorkspace } from "@/lib/workspace";
 
-// Simple LINE glyph for the auth button
-function LineGlyph({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-      <path d="M12 3C6.9 3 3 6.3 3 10.4c0 3.7 3.2 6.8 7.5 7.4.3.06.7.2.8.45.07.23.05.58.02.8l-.13.8c-.04.24-.2.94.83.51 1.03-.43 5.5-3.24 7.5-5.55 1.38-1.5 2.05-3 2.05-4.86C21.6 6.3 17.1 3 12 3Z" />
-    </svg>
-  );
-}
-
 function Brand() {
   return (
     <div className="flex items-center justify-center gap-2">
@@ -28,28 +19,22 @@ function Brand() {
 export function LoginScreen() {
   const { loginWithLine } = useWorkspace();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fafafb] px-6">
-      <div className="w-full max-w-[400px] text-center">
-        <Brand />
-        <h1 className="mt-8 text-[26px] font-bold tracking-tight text-[#111827]">
-          The AI that knows your company.
-        </h1>
-        <p className="mt-3 text-[14px] leading-relaxed text-[#6b7280]">
-          Access your organization&apos;s knowledge, documents, and trusted answers in one secure
-          workspace.
-        </p>
-
+    <div className="flex min-h-screen items-center justify-center bg-black">
+      <div className="relative w-full max-w-[1600px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/login-hero.png"
+          alt="NPC — The AI that knows your company"
+          className="block h-auto w-full select-none"
+          draggable={false}
+        />
+        {/* transparent clickable area over the CONTINUE WITH LINE button in the image */}
         <button
           onClick={() => loginWithLine()}
-          className="press mt-8 flex w-full items-center justify-center gap-2.5 rounded-[10px] bg-[#06c755] px-4 py-3 text-[15px] font-medium text-white"
-        >
-          <LineGlyph className="h-5 w-5" />
-          Continue with LINE
-        </button>
-
-        <p className="mt-5 text-[12px] leading-relaxed text-[#9ca3af]">
-          By continuing, you agree to the workspace&apos;s access and privacy policies.
-        </p>
+          aria-label="Continue with LINE"
+          className="absolute rounded-full outline-none transition hover:bg-white/10 focus-visible:ring-4 focus-visible:ring-[#22e06a]/50"
+          style={{ left: "7.5%", top: "63.4%", width: "15.6%", height: "8.2%" }}
+        />
       </div>
     </div>
   );
